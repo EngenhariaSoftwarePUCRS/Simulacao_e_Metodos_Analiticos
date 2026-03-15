@@ -221,6 +221,22 @@ function exportCSV(numbers) {
     URL.revokeObjectURL(url);
 }
 
+function exportChartPNG() {
+    if (!scatterChart) {
+        generateAndRender();
+    }
+
+    if (!scatterChart) {
+        return;
+    }
+
+    const imageUrl = scatterChart.toBase64Image("image/png", 1);
+    const link = document.createElement("a");
+    link.href = imageUrl;
+    link.download = "grafico_dispersao_lcg.png";
+    link.click();
+}
+
 function getParameters() {
     return {
         seed: Number.parseInt(document.getElementById("seed").value, 10),
@@ -274,6 +290,8 @@ document.getElementById("download").addEventListener("click", () => {
     }
     exportCSV(lastGeneratedNumbers);
 });
+
+document.getElementById("download-chart").addEventListener("click", exportChartPNG);
 
 function updateTableHint(limit, total) {
     const hint = document.querySelector(".table-hint");

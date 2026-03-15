@@ -52,6 +52,17 @@ h2 {
     margin-bottom: 1rem;
 }
 
+.chart-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.chart-header h2 {
+    margin: 0;
+}
+
 .method-panel {
     background-color: var(--bg-secondary);
     border: 1px solid var(--blue-neon);
@@ -157,19 +168,22 @@ h2 {
 }
 
 #download,
-#toggle-row-limit {
+#toggle-row-limit,
+#download-chart {
     color: var(--text-main);
     border: none;
     cursor: pointer;
 }
 
 #download,
-#toggle-row-limit {
+#toggle-row-limit,
+#download-chart {
     background-color: var(--blue-electric);
 }
 
 #download:hover,
-#toggle-row-limit:hover {
+#toggle-row-limit:hover,
+#download-chart:hover {
     background-color: var(--blue-neon);
 }
 
@@ -192,6 +206,12 @@ h2 {
 #download {
     padding: 0.55rem 1rem;
     border-radius: 6px;
+}
+
+#download-chart {
+    padding: 0.55rem 1rem;
+    border-radius: 6px;
+    flex-shrink: 0;
 }
 
 #toggle-row-limit {

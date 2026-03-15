@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SiMA - Geração de Números Pseudoaleatórios</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <h1>SiMA — Geração de Números Pseudoaleatórios</h1>
+    </header>
+
+    <main>
+        <section class="chart-panel">
+            <h2>Gráfico de Dispersão</h2>
+            <canvas id="scatterPlot"></canvas>
+        </section>
+
+        <section class="input-panel">
+            <h2>Painel de Parâmetros</h2>
+
+            <div class="params-grid">
+                <div class="param-field" title="A semente X₀ não pode ser negativa e deve ser menor que M (0 ≤ X₀ &lt; M).">
+                    <label for="seed">
+                        <span class="label-text">Semente (X₀):</span>
+                        <input class="label-value" type="number" id="seed-value" min="0" max="4294967294" step="1">
+                    </label>
+                    <input type="range" id="seed" min="0" max="4294967294" step="1">
+                </div>
+
+                <div class="param-field" title="O valor multiplicador 'a' deve ser positivo e menor que 'M' (0 &lt; a &lt; M).">
+                    <label for="multiplier">
+                        <span class="label-text">Multiplicador (a):</span>
+                        <input class="label-value" type="number" id="multiplier-value" min="1" max="4294967294" step="1">
+                    </label>
+                    <input type="range" id="multiplier" min="1" max="4294967294" step="1">
+                </div>
+
+                <div class="param-field" title="O incremento 'c' não pode ser negativo e deve ser menor que 'M' (0 ≤ c &lt; M).">
+                    <label for="increment">
+                        <span class="label-text">Incremento (c):</span>
+                        <input class="label-value" type="number" id="increment-value" min="0" max="4294967294" step="1">
+                    </label>
+                    <input type="range" id="increment" min="0" max="4294967294" step="1">
+                </div>
+
+                <div class="param-field" title="M deve ser positivo (M &gt; 0).">
+                    <label for="modulus">
+                        <span class="label-text">Módulo (M):</span>
+                        <input class="label-value" type="number" id="modulus-value" min="1" max="4294967295" step="1">
+                    </label>
+                    <input type="range" id="modulus" min="1" max="4294967295" step="1">
+                </div>
+
+                <div class="param-field" title="Número de valores pseudoaleatórios que serão gerados.">
+                    <label for="count">
+                        <span class="label-text">Quantidade de valores:</span>
+                        <input class="label-value" type="number" id="count-value" min="10" max="1000000" step="10">
+                    </label>
+                    <input type="range" id="count" min="10" max="1000000" step="10">
+                </div>
+            </div>
+        </section>
+
+        <div class="generate-actions">
+            <button id="generate">Gerar</button>
+        </div>
+
+        <section class="method-panel">
+            <h2>Método da Congruência Linear</h2>
+
+            <p>
+                O método mais popular e utilizado largamente na geração de números pseudoaleatórios é conhecido
+                como Método da Congruência Linear proposto por Derrick Lehmer (1951).
+            </p>
+
+            <p>
+                O método é extremamente simples e produz uma série de números pseudoaleatórios utilizando um
+                dado número inicial (semente). Vamos definir este valor como X₀; um parâmetro inteiro "a",
+                o qual é o multiplicador do método; um parâmetro "c", o qual é o incremento; e "M",
+                o valor do módulo, o qual define o tamanho máximo de valores da sequência.
+            </p>
+
+            <p>
+                Logo, o gerador é definido pela relação linear:
+            </p>
+
+            <div class="formula">
+                X<sub>n+1</sub> = (aX<sub>n</sub> + c) mod M
+            </div>
+
+            <h3>Normalização dos Valores</h3>
+
+            <p>
+                Dado que os valores gerados na sequência são uniformemente distribuídos entre os valores
+                de 0 e M-1, deseja-se normalizar estes valores de forma a termos os valores uniformemente
+                distribuídos no intervalo de [0,1).
+            </p>
+
+            <p>
+                Desta forma, basta dividirmos os valores obtidos na sequência por "M" que teremos
+                o resultado desejado.
+            </p>
+
+            <p>
+                Logo, U<sub>i</sub> é dado pela divisão de X<sub>i</sub> por M, onde U<sub>i</sub>
+                é o "iésimo" número, distribuído no intervalo [0,1), da sequência de pseudoaleatórios
+                obtidos pelo gerador:
+            </p>
+
+            <div class="formula">
+                U<sub>i</sub> = X<sub>i</sub> / M
+            </div>
+
+            <p>
+                Ou seja, o próximo número pseudoaleatório X<sub>n+1</sub> gerado na sequência é obtido
+                pelo módulo (resto da divisão inteira) de M do valor de X<sub>n</sub> (último valor
+                gerado da sequência) multiplicado pelo valor de "a" e incrementado pelo valor de "c".
+            </p>
+        </section>
+
+        <section class="table-panel">
+            <div class="table-header">
+                <h2>Tabela de Valores Gerados</h2>
+                <div class="table-actions">
+                    <button id="toggle-row-limit">Mostrar mais (1 000)</button>
+                    <button id="download">Baixar CSV</button>
+                </div>
+            </div>
+            <p class="table-hint" title="A tabela é limitada por desempenho e legibilidade.">
+                Exibindo os <strong>50 primeiros</strong> valores gerados. Alterne a quantidade de linhas visíveis com o botão ao lado, ou exporte a sequência completa em CSV.
+            </p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>i</th>
+                        <th>U<sub>i</sub></th>
+                        <th>X<sub>i</sub></th>
+                        <th id="intermediate-header" title="aX₍i-1₎ + c">a × X<sub>i-1</sub> + c</th>
+                    </tr>
+                </thead>
+                <tbody id="numbersTable"></tbody>
+            </table>
+        </section>
+    </main>
+
+    <script src="script.js"></script>
+</body>
+</html>

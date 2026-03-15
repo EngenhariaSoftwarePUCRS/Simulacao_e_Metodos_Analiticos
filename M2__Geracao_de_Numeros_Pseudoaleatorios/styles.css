@@ -156,14 +156,6 @@ h2 {
     border: none;
 }
 
-.generate-actions {
-    max-width: 1100px;
-    margin: 1.25rem auto 1rem;
-    display: flex;
-    justify-content: center;
-}
-
-.generate-actions button,
 #download,
 #toggle-row-limit {
     color: var(--text-main);
@@ -178,18 +170,6 @@ h2 {
 
 #download:hover,
 #toggle-row-limit:hover {
-    background-color: var(--blue-neon);
-}
-
-#generate {
-    background-color: var(--blue-electric);
-    font-size: 1.05rem;
-    font-weight: 600;
-    padding: 0.8rem 2.25rem;
-    border-radius: 8px;
-}
-
-#generate:hover {
     background-color: var(--blue-neon);
 }
 

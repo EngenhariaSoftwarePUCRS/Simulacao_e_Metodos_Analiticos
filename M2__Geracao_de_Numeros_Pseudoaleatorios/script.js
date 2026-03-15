@@ -1,6 +1,9 @@
 let scatterChart = null;
 let lastGeneratedNumbers = [];
 let currentTableLimit = 50;
+let generateTimeoutId = null;
+
+const AUTO_GENERATE_DELAY = 350;
 
 const DEFAULT_PARAMS = {
 	seed: 7,
@@ -72,6 +75,13 @@ function updateDependentParameterLimits(modulusRawValue) {
     });
 }
 
+function scheduleGenerateAndRender() {
+    window.clearTimeout(generateTimeoutId);
+    generateTimeoutId = window.setTimeout(() => {
+        generateAndRender();
+    }, AUTO_GENERATE_DELAY);
+}
+
 function setupParameterControls() {
     PARAM_KEYS.forEach((key) => {
         const slider = document.getElementById(key);
@@ -87,12 +97,20 @@ function setupParameterControls() {
             }
         });
 
-        const syncFromNumberInput = () => {
+        slider.addEventListener("change", () => {
+            setParameterValue(key, slider.value);
+            scheduleGenerateAndRender();
+        });
+
+        const syncFromNumberInput = (shouldRegenerate = false) => {
             setParameterValue(key, numberInput.value);
+            if (shouldRegenerate) {
+                scheduleGenerateAndRender();
+            }
         };
 
-        numberInput.addEventListener("input", syncFromNumberInput);
-        numberInput.addEventListener("change", syncFromNumberInput);
+        numberInput.addEventListener("input", () => syncFromNumberInput(true));
+        numberInput.addEventListener("change", () => syncFromNumberInput(true));
     });
 }
 
@@ -249,8 +267,6 @@ function generateAndRender() {
     updateTableHint(currentTableLimit, lastGeneratedNumbers.length);
     populateTable(lastGeneratedNumbers, currentTableLimit);
 }
-
-document.getElementById("generate").addEventListener("click", generateAndRender);
 
 document.getElementById("download").addEventListener("click", () => {
     if (lastGeneratedNumbers.length === 0) {

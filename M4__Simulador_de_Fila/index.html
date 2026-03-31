@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SiMA - Simulador de Fila G/G/c/K</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <h1>SiMA - Simulador de Fila G/G/c/K</h1>
+    </header>
+
+    <main>
+        <section class="panel">
+            <h2>Gerador Pseudoaleatorio (LCG)</h2>
+            <div class="params-grid params-grid-4">
+                <label>
+                    Semente (X0)
+                    <input type="number" id="seed" min="0" step="1" value="42">
+                </label>
+                <label>
+                    Multiplicador (a)
+                    <input type="number" id="multiplier" min="1" step="1" value="39758">
+                </label>
+                <label>
+                    Incremento (c)
+                    <input type="number" id="increment" min="0" step="1" value="58739">
+                </label>
+                <label>
+                    Modulo (M)
+                    <input type="number" id="modulus" min="2" step="1" value="1000000">
+                </label>
+            </div>
+        </section>
+
+        <section class="panel">
+            <h2>Parametros da Fila</h2>
+            <div class="params-grid params-grid-4">
+                <label>
+                    Primeira chegada (t0)
+                    <input type="number" id="first-arrival" min="0" step="0.1" value="2.0">
+                </label>
+                <label>
+                    minArrival
+                    <input type="number" id="min-arrival" min="0" step="0.1" value="2.0">
+                </label>
+                <label>
+                    maxArrival
+                    <input type="number" id="max-arrival" min="0" step="0.1" value="5.0">
+                </label>
+                <label>
+                    minService
+                    <input type="number" id="min-service" min="0" step="0.1" value="3.0">
+                </label>
+                <label>
+                    maxService
+                    <input type="number" id="max-service" min="0" step="0.1" value="5.0">
+                </label>
+                <label>
+                    Servidores (c)
+                    <input type="number" id="servers" min="1" step="1" value="1">
+                </label>
+                <label>
+                    Capacidade total (K)
+                    <input type="number" id="capacity" min="1" step="1" value="5">
+                </label>
+                <label>
+                    Quantidade de aleatorios
+                    <input type="number" id="random-count" min="1" step="1" value="100000">
+                </label>
+            </div>
+
+            <div class="actions">
+                <button id="run">Executar simulacao</button>
+                <button id="scenario-c1">Cenario minimo c=1</button>
+                <button id="scenario-c2">Cenario minimo c=2</button>
+                <button id="download-csv">Baixar CSV</button>
+            </div>
+            <p id="error" class="error"></p>
+        </section>
+
+        <section class="panel">
+            <h2>Resumo de Metricas</h2>
+            <div id="metrics" class="metrics"></div>
+        </section>
+
+        <section class="panel">
+            <h2>Tabela de Estados</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Estado (i)</th>
+                        <th>Tempo acumulado</th>
+                        <th>Probabilidade</th>
+                    </tr>
+                </thead>
+                <tbody id="states-table"></tbody>
+            </table>
+        </section>
+
+        <section class="panel chart-panel">
+            <div class="chart-header">
+                <h2>Grafico de Probabilidade por Estado</h2>
+                <button id="download-chart">Baixar PNG</button>
+            </div>
+            <canvas id="stateChart"></canvas>
+        </section>
+
+        <section class="panel method-panel">
+            <h2>Explicacao do Simulador de Fila</h2>
+
+            <p>
+                Este modulo implementa uma simulacao de eventos discretos para uma fila G/G/c/K.
+                As chegadas e os tempos de servico sao amostrados de distribuicoes uniformes, com base
+                em um gerador congruencial linear (LCG) unico e sequencial.
+            </p>
+
+            <p>
+                Cada evento possui estrutura <strong>{ tempo, tipo }</strong>, onde tipo pode ser
+                CHEGADA ou SAIDA. A lista de eventos e mantida ordenada por tempo, e o proximo evento
+                processado e sempre o de menor tempo.
+            </p>
+
+            <div class="formula">
+                X(n+1) = (a * X(n) + c) mod M, com U = X / M
+            </div>
+
+            <p>
+                Antes de processar cada evento, o simulador calcula o intervalo de tempo desde o evento
+                anterior e acumula esse intervalo no estado anterior do sistema. O estado i representa
+                o numero total de clientes no sistema (fila + servico).
+            </p>
+
+            <p>
+                Ao final, sao calculadas as probabilidades de estado P(i) = tempo(i) / tempoTotal,
+                a populacao media Nmedio, a probabilidade de sistema vazio P(0) e o total de perdas por
+                bloqueio quando N atinge K.
+            </p>
+        </section>
+    </main>
+
+    <script src="script.js"></script>
+</body>
+</html>

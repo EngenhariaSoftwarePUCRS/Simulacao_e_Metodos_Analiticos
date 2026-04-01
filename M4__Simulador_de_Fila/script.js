@@ -108,13 +108,20 @@ function processArrival(state, params) {
 
         if (state.emServico < params.servers) {
             state.emServico += 1;
-            scheduleDeparture(state, params);
+            const scheduledDeparture = scheduleDeparture(state, params);
+            if (!scheduledDeparture) {
+                state.shouldStop = true;
+                return;
+            }
         }
     } else {
         state.perdas += 1;
     }
 
-    scheduleNextArrival(state, params);
+    const scheduledArrival = scheduleNextArrival(state, params);
+    if (!scheduledArrival) {
+        state.shouldStop = true;
+    }
 }
 
 function processDeparture(state, params) {
@@ -128,7 +135,10 @@ function processDeparture(state, params) {
     const fila = state.N - state.emServico;
     if (fila > 0) {
         state.emServico += 1;
-        scheduleDeparture(state, params);
+        const scheduledDeparture = scheduleDeparture(state, params);
+        if (!scheduledDeparture) {
+            state.shouldStop = true;
+        }
     }
 }
 
@@ -141,6 +151,7 @@ function runSimulation(params) {
         perdas: 0,
         times: Array(params.K + 1).fill(0),
         events: [],
+        shouldStop: false,
         rng: {
             a: params.a,
             c: params.c,
@@ -156,7 +167,7 @@ function runSimulation(params) {
         tipo: EVENT_TYPES.CHEGADA,
     });
 
-    while (state.events.length > 0 && state.rng.remaining > 0) {
+    while (state.events.length > 0 && state.rng.remaining > 0 && !state.shouldStop) {
         const evento = nextEvent(state.events);
         state.tempoAtual = evento.tempo;
 

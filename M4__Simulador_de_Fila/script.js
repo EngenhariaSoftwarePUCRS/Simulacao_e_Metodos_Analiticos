@@ -5,6 +5,10 @@ const EVENT_TYPES = {
 
 let lastResult = null;
 let stateChart = null;
+let lcgScatterChart = null;
+let regenerateTimeoutId = null;
+
+const AUTO_REGENERATE_DELAY = 250;
 
 function readParams() {
     return {
@@ -19,7 +23,7 @@ function readParams() {
         maxService: Number.parseFloat(document.getElementById("max-service").value),
         servers: Number.parseInt(document.getElementById("servers").value, 10),
         K: Number.parseInt(document.getElementById("capacity").value, 10),
-        randomCount: Number.parseInt(document.getElementById("random-count").value, 10),
+        randomCount: Number.parseInt(document.getElementById("count").value, 10),
     };
 }
 
@@ -289,6 +293,96 @@ function exportChartPng() {
     link.click();
 }
 
+function generateLcgScatterPoints(seed, a, c, M, count) {
+    const sampleCount = Math.max(2, Math.min(count, 5000));
+    const values = [];
+    let previous = seed;
+
+    for (let i = 0; i < sampleCount; i += 1) {
+        previous = (a * previous + c) % M;
+        values.push(previous / M);
+    }
+
+    const points = [];
+    for (let i = 0; i < values.length - 1; i += 1) {
+        points.push({ x: values[i], y: values[i + 1] });
+    }
+    return points;
+}
+
+function renderLcgDistributionChart(params) {
+    const canvas = document.getElementById("lcgScatterPlot");
+    if (!canvas) {
+        return;
+    }
+
+    const points = generateLcgScatterPoints(params.seed, params.a, params.c, params.M, params.randomCount);
+    if (lcgScatterChart) {
+        lcgScatterChart.destroy();
+    }
+
+    lcgScatterChart = new Chart(canvas.getContext("2d"), {
+        type: "scatter",
+        data: {
+            datasets: [
+                {
+                    label: "U_i x U_i+1",
+                    data: points,
+                    pointRadius: 2,
+                    backgroundColor: "#FF4FD8",
+                    borderColor: "#FF4FD8",
+                    showLine: false,
+                },
+            ],
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: {
+                    min: 0,
+                    max: 1,
+                    title: {
+                        display: true,
+                        text: "U_i",
+                    },
+                },
+                y: {
+                    min: 0,
+                    max: 1,
+                    title: {
+                        display: true,
+                        text: "U_i+1",
+                    },
+                },
+            },
+        },
+    });
+}
+
+function setupLcgAccordion() {
+    const toggle = document.getElementById("lcg-accordion-toggle");
+    const content = document.getElementById("lcg-distribution-content");
+    if (!toggle || !content) {
+        return;
+    }
+
+    toggle.addEventListener("click", () => {
+        const isOpen = toggle.getAttribute("aria-expanded") === "true";
+        if (isOpen) {
+            toggle.setAttribute("aria-expanded", "false");
+            toggle.textContent = "Mostrar grafico de distribuicao do LCG";
+            content.hidden = true;
+        } else {
+            const params = readParams();
+            toggle.setAttribute("aria-expanded", "true");
+            toggle.textContent = "Ocultar grafico de distribuicao do LCG";
+            content.hidden = false;
+            renderLcgDistributionChart(params);
+        }
+    });
+}
+
 function exportCsv(result) {
     const rows = ["estado,tempo,probabilidade"];
     for (let i = 0; i < result.times.length; i += 1) {
@@ -319,6 +413,11 @@ function executeSimulation() {
     renderMetrics(lastResult);
     renderStates(lastResult);
     renderStateChart(lastResult);
+
+    const isLcgVisible = document.getElementById("lcg-accordion-toggle")?.getAttribute("aria-expanded") === "true";
+    if (isLcgVisible) {
+        renderLcgDistributionChart(params);
+    }
 }
 
 function loadMinimumScenario(servers) {
@@ -329,6 +428,40 @@ function loadMinimumScenario(servers) {
     document.getElementById("max-service").value = "5.0";
     document.getElementById("servers").value = String(servers);
     document.getElementById("capacity").value = "5";
+}
+
+function scheduleExecuteSimulation() {
+    window.clearTimeout(regenerateTimeoutId);
+    regenerateTimeoutId = window.setTimeout(() => {
+        executeSimulation();
+    }, AUTO_REGENERATE_DELAY);
+}
+
+function setupAutoRegeneration() {
+    const fields = [
+        "seed",
+        "multiplier",
+        "increment",
+        "modulus",
+        "count",
+        "first-arrival",
+        "min-arrival",
+        "max-arrival",
+        "min-service",
+        "max-service",
+        "servers",
+        "capacity",
+    ];
+
+    fields.forEach((id) => {
+        const node = document.getElementById(id);
+        if (!node) {
+            return;
+        }
+
+        node.addEventListener("blur", scheduleExecuteSimulation);
+        node.addEventListener("change", scheduleExecuteSimulation);
+    });
 }
 
 document.getElementById("run").addEventListener("click", executeSimulation);
@@ -355,5 +488,7 @@ document.getElementById("download-csv").addEventListener("click", () => {
 document.getElementById("download-chart").addEventListener("click", exportChartPng);
 
 window.addEventListener("DOMContentLoaded", () => {
+    setupLcgAccordion();
+    setupAutoRegeneration();
     executeSimulation();
 });

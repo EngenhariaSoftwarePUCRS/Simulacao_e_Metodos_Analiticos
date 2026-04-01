@@ -96,6 +96,32 @@ button:hover {
     background-color: var(--blue-neon);
 }
 
+.link-panel a {
+    color: #9fd1ff;
+    font-weight: 700;
+}
+
+.accordion-toggle {
+    width: 100%;
+    text-align: left;
+    font-weight: 700;
+}
+
+.accordion-content {
+    margin-top: 1rem;
+}
+
+#lcgScatterPlot {
+    width: 100% !important;
+    height: 320px !important;
+    max-width: 100%;
+    margin-top: 0.8rem;
+    background-color: var(--bg-main);
+    border: 1px solid var(--blue-neon);
+    border-radius: 8px;
+    padding: 0.5rem;
+}
+
 .error {
     min-height: 1.2rem;
     color: #ffd0d6;
@@ -212,6 +238,10 @@ th {
 @media (min-width: 720px) {
     .params-grid-4 {
         grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .params-grid-5 {
+        grid-template-columns: repeat(5, minmax(0, 1fr));
     }
 
     .metrics {

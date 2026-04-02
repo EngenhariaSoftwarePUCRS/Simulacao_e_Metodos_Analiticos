@@ -7,8 +7,13 @@ let lastResult = null;
 let stateChart = null;
 let lcgScatterChart = null;
 let regenerateTimeoutId = null;
+let statesTableLimit = 50;
+let scheduleTableLimit = 50;
 
 const AUTO_REGENERATE_DELAY = 250;
+const DEFAULT_TABLE_LIMIT = 50;
+const EXPANDED_TABLE_LIMIT = 1000;
+const MAX_CELL_CHARS = 60;
 
 function readParams() {
     return {
@@ -65,7 +70,10 @@ function uniform(min, max, rng) {
     if (u === null) {
         return null;
     }
-    return min + (max - min) * u;
+    return {
+        u,
+        value: min + (max - min) * u,
+    };
 }
 
 function enqueueEvent(queue, event) {
@@ -80,27 +88,106 @@ function nextEvent(queue) {
     return queue.shift();
 }
 
+function formatNumber(value) {
+    return value.toFixed(4);
+}
+
+function formatEventType(type) {
+    return type === EVENT_TYPES.CHEGADA ? "Chegada" : "Saida";
+}
+
+function setLimitToggleLabel(buttonId, currentLimit) {
+    const button = document.getElementById(buttonId);
+    if (!button) {
+        return;
+    }
+
+    button.textContent = currentLimit === DEFAULT_TABLE_LIMIT
+        ? "Mostrar 1000 primeiros"
+        : "Mostrar 50 primeiros";
+}
+
+function escapeHtml(value) {
+    return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#39;");
+}
+
+function truncateForCell(text, maxChars = MAX_CELL_CHARS) {
+    const fullText = String(text);
+    if (fullText.length <= maxChars) {
+        return `<span title="${escapeHtml(fullText)}">${escapeHtml(fullText)}</span>`;
+    }
+
+    const shortText = `${fullText.slice(0, maxChars - 1)}…`;
+    return `<span title="${escapeHtml(fullText)}">${escapeHtml(shortText)}</span>`;
+}
+
+function addSchedulerRow(state, payload) {
+    state.scheduleCounter += 1;
+
+    if (payload.isInitial) {
+        state.schedulerRows.push({
+            event: `(${state.scheduleCounter}) ${formatEventType(payload.tipo)} inicial`,
+            tempo: `0.0000 + t0(${formatNumber(payload.tempoAgendado)}) = ${formatNumber(payload.tempoAgendado)}`,
+            sorteio: `t0 = ${formatNumber(payload.tempoAgendado)}`,
+        });
+        return;
+    }
+
+    state.schedulerRows.push({
+        event: `(${state.scheduleCounter}) ${formatEventType(payload.tipo)}`,
+        tempo: `${formatNumber(payload.tempoBase)} + ${formatNumber(payload.sorteio)} = ${formatNumber(payload.tempoAgendado)}`,
+        sorteio: `u=${formatNumber(payload.u)}; U(${formatNumber(payload.min)}, ${formatNumber(payload.max)}) = ${formatNumber(payload.sorteio)}`,
+    });
+}
+
 function scheduleNextArrival(state, params) {
-    const delta = uniform(params.minArrival, params.maxArrival, state.rng);
-    if (delta === null) {
+    const draw = uniform(params.minArrival, params.maxArrival, state.rng);
+    if (draw === null) {
         return false;
     }
 
+    const scheduledTime = state.tempoAtual + draw.value;
+    addSchedulerRow(state, {
+        tipo: EVENT_TYPES.CHEGADA,
+        tempoBase: state.tempoAtual,
+        sorteio: draw.value,
+        u: draw.u,
+        tempoAgendado: scheduledTime,
+        min: params.minArrival,
+        max: params.maxArrival,
+    });
+
     enqueueEvent(state.events, {
-        tempo: state.tempoAtual + delta,
+        tempo: scheduledTime,
         tipo: EVENT_TYPES.CHEGADA,
     });
     return true;
 }
 
 function scheduleDeparture(state, params) {
-    const service = uniform(params.minService, params.maxService, state.rng);
-    if (service === null) {
+    const draw = uniform(params.minService, params.maxService, state.rng);
+    if (draw === null) {
         return false;
     }
 
+    const scheduledTime = state.tempoAtual + draw.value;
+    addSchedulerRow(state, {
+        tipo: EVENT_TYPES.SAIDA,
+        tempoBase: state.tempoAtual,
+        sorteio: draw.value,
+        u: draw.u,
+        tempoAgendado: scheduledTime,
+        min: params.minService,
+        max: params.maxService,
+    });
+
     enqueueEvent(state.events, {
-        tempo: state.tempoAtual + service,
+        tempo: scheduledTime,
         tipo: EVENT_TYPES.SAIDA,
     });
     return true;
@@ -155,6 +242,10 @@ function runSimulation(params) {
         perdas: 0,
         times: Array(params.K + 1).fill(0),
         events: [],
+        processedRows: [],
+        schedulerRows: [],
+        processedCounter: 0,
+        scheduleCounter: 0,
         shouldStop: false,
         rng: {
             a: params.a,
@@ -171,6 +262,12 @@ function runSimulation(params) {
         tipo: EVENT_TYPES.CHEGADA,
     });
 
+    addSchedulerRow(state, {
+        tipo: EVENT_TYPES.CHEGADA,
+        isInitial: true,
+        tempoAgendado: params.firstArrival,
+    });
+
     while (state.events.length > 0 && state.rng.remaining > 0 && !state.shouldStop) {
         const evento = nextEvent(state.events);
         state.tempoAtual = evento.tempo;
@@ -184,6 +281,14 @@ function runSimulation(params) {
         } else {
             processDeparture(state, params);
         }
+
+        state.processedCounter += 1;
+        state.processedRows.push({
+            event: `${state.processedCounter} - ${formatEventType(evento.tipo)}`,
+            fila: Math.max(0, state.N - state.emServico),
+            tempoGlobal: state.tempoAtual,
+            accumulatedByState: [...state.times],
+        });
     }
 
     const tempoGlobal = state.tempoAtual;
@@ -201,6 +306,8 @@ function runSimulation(params) {
         pFilaVazia: prob[0] ?? 0,
         randomUsed: state.rng.used,
         randomRemaining: state.rng.remaining,
+        processedRows: state.processedRows,
+        schedulerRows: state.schedulerRows,
         stopReason: state.rng.remaining <= 0 ? "Aleatorios esgotados" : "Fila de eventos vazia",
     };
 }
@@ -208,14 +315,17 @@ function runSimulation(params) {
 function renderMetrics(result) {
     const container = document.getElementById("metrics");
     const items = [
-        ["Tempo total", result.tempoGlobal.toFixed(6)],
-        ["Perdas", String(result.perdas)],
-        ["Populacao media (Nmedio)", result.Nmedio.toFixed(6)],
-        ["Prob. fila vazia", result.pFilaVazia.toFixed(6)],
-        ["Aleatorios usados", String(result.randomUsed)],
-        ["Aleatorios restantes", String(result.randomRemaining)],
-        ["Parada", result.stopReason],
+        ["Tempo total", `${result.tempoGlobal.toFixed(4)} u.t.`],
+        ["Perdas", `${result.perdas} clientes`],
+        ["Populacao media (Nmedio)", `${result.Nmedio.toFixed(4)} clientes`],
+        ["Prob. fila vazia", `${(result.pFilaVazia * 100).toFixed(4)}%`],
+        ["Aleatorios usados", `${result.randomUsed} amostras`],
+        ["Aleatorios restantes", `${result.randomRemaining} amostras`],
     ];
+
+    if (result.stopReason && result.stopReason !== "Aleatorios esgotados") {
+        items.push(["Parada", result.stopReason]);
+    }
 
     container.innerHTML = items.map(([label, value]) => (
         `<article class="metric-card"><h3>${label}</h3><p>${value}</p></article>`
@@ -223,9 +333,62 @@ function renderMetrics(result) {
 }
 
 function renderStates(result) {
+    const head = document.getElementById("states-head");
     const tbody = document.getElementById("states-table");
+
+    if (!head || !tbody) {
+        return;
+    }
+
+    const stateHeaders = result.times.map((_, i) => `<th>Estado ${i}</th>`).join("");
+    head.innerHTML = `<tr><th>Evento</th><th>Fila</th><th>Tempo global</th>${stateHeaders}</tr>`;
+
+    const visibleRows = result.processedRows.slice(0, statesTableLimit);
+    const hiddenRowsCount = Math.max(0, result.processedRows.length - visibleRows.length);
+
+    let html = visibleRows.map((row) => {
+        const accumulatedCells = row.accumulatedByState
+            .map((value) => `<td>${formatNumber(value)}</td>`)
+            .join("");
+
+        return `<tr><td>${row.event}</td><td>${row.fila}</td><td>${formatNumber(row.tempoGlobal)}</td>${accumulatedCells}</tr>`;
+    }).join("");
+
+    if (hiddenRowsCount > 0) {
+        html += `<tr><td colspan="${result.times.length + 3}">+ ${hiddenRowsCount} eventos ocultos (use o botão para expandir)</td></tr>`;
+    }
+
+    tbody.innerHTML = html;
+}
+
+function renderScheduler(result) {
+    const tbody = document.getElementById("schedule-table");
+    if (!tbody) {
+        return;
+    }
+
+    const visibleRows = result.schedulerRows.slice(0, scheduleTableLimit);
+    const hiddenRowsCount = Math.max(0, result.schedulerRows.length - visibleRows.length);
+
+    let html = visibleRows.map((row) => {
+        return `<tr><td>${row.event}</td><td>${truncateForCell(row.tempo)}</td><td>${truncateForCell(row.sorteio)}</td></tr>`;
+    }).join("");
+
+    if (hiddenRowsCount > 0) {
+        html += `<tr><td colspan="3">+ ${hiddenRowsCount} escalonamentos ocultos (use o botão para expandir)</td></tr>`;
+    }
+
+    tbody.innerHTML = html;
+}
+
+function renderStateProbabilityTable(result) {
+    const tbody = document.getElementById("state-probability-table");
+    if (!tbody) {
+        return;
+    }
+
     tbody.innerHTML = result.times.map((tempo, i) => {
-        return `<tr><td>${i}</td><td>${tempo.toFixed(6)}</td><td>${result.prob[i].toFixed(6)}</td></tr>`;
+        return `<tr><td>${i}</td><td>${tempo.toFixed(4)}</td><td>${result.prob[i].toFixed(4)}</td></tr>`;
     }).join("");
 }
 
@@ -386,7 +549,7 @@ function setupLcgAccordion() {
 function exportCsv(result) {
     const rows = ["estado,tempo,probabilidade"];
     for (let i = 0; i < result.times.length; i += 1) {
-        rows.push(`${i},${result.times[i].toFixed(6)},${result.prob[i].toFixed(6)}`);
+        rows.push(`${i},${result.times[i].toFixed(4)},${result.prob[i].toFixed(4)}`);
     }
 
     const blob = new Blob([rows.join("\n")], { type: "text/csv;charset=utf-8;" });
@@ -410,8 +573,14 @@ function executeSimulation() {
 
     errorNode.textContent = "";
     lastResult = runSimulation(params);
+    statesTableLimit = DEFAULT_TABLE_LIMIT;
+    scheduleTableLimit = DEFAULT_TABLE_LIMIT;
+    setLimitToggleLabel("toggle-states-limit", statesTableLimit);
+    setLimitToggleLabel("toggle-schedule-limit", scheduleTableLimit);
     renderMetrics(lastResult);
     renderStates(lastResult);
+    renderScheduler(lastResult);
+    renderStateProbabilityTable(lastResult);
     renderStateChart(lastResult);
 
     const isLcgVisible = document.getElementById("lcg-accordion-toggle")?.getAttribute("aria-expanded") === "true";
@@ -486,6 +655,28 @@ document.getElementById("download-csv").addEventListener("click", () => {
 });
 
 document.getElementById("download-chart").addEventListener("click", exportChartPng);
+
+document.getElementById("toggle-states-limit")?.addEventListener("click", () => {
+    if (!lastResult) {
+        executeSimulation();
+        return;
+    }
+
+    statesTableLimit = statesTableLimit === DEFAULT_TABLE_LIMIT ? EXPANDED_TABLE_LIMIT : DEFAULT_TABLE_LIMIT;
+    setLimitToggleLabel("toggle-states-limit", statesTableLimit);
+    renderStates(lastResult);
+});
+
+document.getElementById("toggle-schedule-limit")?.addEventListener("click", () => {
+    if (!lastResult) {
+        executeSimulation();
+        return;
+    }
+
+    scheduleTableLimit = scheduleTableLimit === DEFAULT_TABLE_LIMIT ? EXPANDED_TABLE_LIMIT : DEFAULT_TABLE_LIMIT;
+    setLimitToggleLabel("toggle-schedule-limit", scheduleTableLimit);
+    renderScheduler(lastResult);
+});
 
 window.addEventListener("DOMContentLoaded", () => {
     setupLcgAccordion();

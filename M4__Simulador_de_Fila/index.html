@@ -50,7 +50,7 @@
                 </label>
                 <label>
                     Modulo (M)
-                    <input type="number" id="modulus" min="2" step="1" value="1000000">
+                    <input type="number" id="modulus" min="2" step="1" value="987654321">
                 </label>
                 <label>
                     Quantidade de valores
@@ -107,7 +107,41 @@
         </section>
 
         <section class="panel">
-            <h2>Tabela de Estados</h2>
+            <div class="table-header">
+                <h2>Tabela de Estados</h2>
+                <div class="table-actions">
+                    <button id="toggle-states-limit">Mostrar 1000 primeiros</button>
+                </div>
+            </div>
+            <p class="table-hint">Exibindo os 50 primeiros eventos por padrão.</p>
+            <table>
+                <thead id="states-head"></thead>
+                <tbody id="states-table"></tbody>
+            </table>
+        </section>
+
+        <section class="panel">
+            <div class="table-header">
+                <h2>Tabela de Escalonamento</h2>
+                <div class="table-actions">
+                    <button id="toggle-schedule-limit">Mostrar 1000 primeiros</button>
+                </div>
+            </div>
+            <p class="table-hint">Exibindo os 50 primeiros agendamentos por padrão.</p>
+            <table>
+                <thead id="schedule-head">
+                    <tr>
+                        <th>Evento</th>
+                        <th>Tempo</th>
+                        <th>Sorteio</th>
+                    </tr>
+                </thead>
+                <tbody id="schedule-table"></tbody>
+            </table>
+        </section>
+
+        <section class="panel">
+            <h2>Tabela de Probabilidade por Estado</h2>
             <table>
                 <thead>
                     <tr>
@@ -116,7 +150,7 @@
                         <th>Probabilidade</th>
                     </tr>
                 </thead>
-                <tbody id="states-table"></tbody>
+                <tbody id="state-probability-table"></tbody>
             </table>
         </section>
 

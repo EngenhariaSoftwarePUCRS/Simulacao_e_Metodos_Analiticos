@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SiMA - Simulador de Filas em Tandem</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+    <header>
+        <h1>SiMA - Simulador de Filas em Tandem</h1>
+    </header>
+
+    <main>
+        <section class="panel link-panel">
+            <h2>Referência ao módulo anterior</h2>
+            <p>
+                Este simulador expande o simulador de uma fila simples para duas filas em tandem,
+                utilizando eventos de chegada, passagem entre filas e saída do sistema.
+            </p>
+        </section>
+
+        <section class="panel">
+            <button
+                id="lcg-accordion-toggle"
+                class="accordion-toggle"
+                aria-expanded="false"
+                aria-controls="lcg-distribution-content"
+            >
+                Mostrar gráfico de distribuição do LCG
+            </button>
+
+            <div id="lcg-distribution-content" class="accordion-content" hidden>
+                <h2>Distribuição LCG (Uᵢ x Uᵢ₊₁)</h2>
+                <canvas id="lcgScatterPlot"></canvas>
+            </div>
+        </section>
+
+        <section class="panel">
+            <h2>Gerador pseudoaleatório (LCG)</h2>
+            <div class="params-grid params-grid-5">
+                <label>
+                    Semente (X0)
+                    <input type="number" id="seed" min="0" step="1" value="42" />
+                </label>
+
+                <label>
+                    Multiplicador (a)
+                    <input type="number" id="multiplier" min="1" step="1" value="39758" />
+                </label>
+
+                <label>
+                    Incremento (c)
+                    <input type="number" id="increment" min="0" step="1" value="58739" />
+                </label>
+
+                <label>
+                    Módulo (M)
+                    <input type="number" id="modulus" min="2" step="1" value="987654321" />
+                </label>
+
+                <label>
+                    Quantidade de valores
+                    <input type="number" id="count" min="1" step="1" value="100000" />
+                </label>
+            </div>
+        </section>
+
+        <section class="panel">
+            <h2>Parâmetros da Fila 1</h2>
+            <div class="params-grid params-grid-4">
+                <label>
+                    Primeira chegada (t0)
+                    <input type="number" id="first-arrival" min="0" step="0.1" value="1.5" />
+                </label>
+
+                <label>
+                    minArrival
+                    <input type="number" id="f1-min-arrival" min="0" step="0.1" value="1.0" />
+                </label>
+
+                <label>
+                    maxArrival
+                    <input type="number" id="f1-max-arrival" min="0" step="0.1" value="4.0" />
+                </label>
+
+                <label>
+                    minService
+                    <input type="number" id="f1-min-service" min="0" step="0.1" value="3.0" />
+                </label>
+
+                <label>
+                    maxService
+                    <input type="number" id="f1-max-service" min="0" step="0.1" value="4.0" />
+                </label>
+
+                <label>
+                    Servidores (c)
+                    <input type="number" id="f1-servers" min="1" step="1" value="2" />
+                </label>
+
+                <label>
+                    Capacidade total (K)
+                    <input type="number" id="f1-capacity" min="1" step="1" value="3" />
+                </label>
+            </div>
+        </section>
+
+        <section class="panel">
+            <h2>Parâmetros da Fila 2</h2>
+            <p class="table-hint">
+                A Fila 2 não recebe chegadas externas. Ela recebe 100% dos clientes
+                que saem da Fila 1.
+            </p>
+
+            <div class="params-grid params-grid-4">
+                <label>
+                    minService
+                    <input type="number" id="f2-min-service" min="0" step="0.1" value="2.0" />
+                </label>
+
+                <label>
+                    maxService
+                    <input type="number" id="f2-max-service" min="0" step="0.1" value="3.0" />
+                </label>
+
+                <label>
+                    Servidores (c)
+                    <input type="number" id="f2-servers" min="1" step="1" value="1" />
+                </label>
+
+                <label>
+                    Capacidade total (K)
+                    <input type="number" id="f2-capacity" min="1" step="1" value="5" />
+                </label>
+            </div>
+
+            <div class="actions">
+                <button id="run">Executar simulação</button>
+                <button id="scenario-minimum">Cenário mínimo do enunciado</button>
+                <button id="download-csv">Baixar CSV</button>
+            </div>
+
+            <p id="error" class="error"></p>
+        </section>
+
+        <section class="panel">
+            <h2>Resumo de métricas gerais</h2>
+            <div id="global-metrics" class="metrics"></div>
+        </section>
+
+        <section class="panel">
+            <h2>Métricas da Fila 1</h2>
+            <div id="queue1-metrics" class="metrics"></div>
+        </section>
+
+        <section class="panel">
+            <h2>Métricas da Fila 2</h2>
+            <div id="queue2-metrics" class="metrics"></div>
+        </section>
+
+        <section class="panel">
+            <div class="table-header">
+                <h2>Tabela de estados processados</h2>
+                <div class="table-actions">
+                    <button id="toggle-states-limit">Mostrar 1000 primeiros</button>
+                </div>
+            </div>
+
+            <p class="table-hint">
+                Exibindo os 50 primeiros eventos processados por padrão.
+            </p>
+
+            <table>
+                <thead id="states-head"></thead>
+                <tbody id="states-table"></tbody>
+            </table>
+        </section>
+
+        <section class="panel">
+            <div class="table-header">
+                <h2>Tabela de escalonamento</h2>
+                <div class="table-actions">
+                    <button id="toggle-schedule-limit">Mostrar 1000 primeiros</button>
+                </div>
+            </div>
+
+            <p class="table-hint">
+                Exibindo os 50 primeiros escalonamentos por padrão.
+            </p>
+
+            <table>
+                <thead id="schedule-head">
+                    <tr>
+                        <th>Evento</th>
+                        <th>Tempo</th>
+                        <th>Sorteio</th>
+                    </tr>
+                </thead>
+                <tbody id="schedule-table"></tbody>
+            </table>
+        </section>
+
+        <section class="panel">
+            <h2>Tabela de probabilidade por estado — Fila 1</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Estado (i)</th>
+                        <th>Tempo acumulado</th>
+                        <th>Probabilidade</th>
+                    </tr>
+                </thead>
+                <tbody id="state-probability-table-f1"></tbody>
+            </table>
+        </section>
+
+        <section class="panel chart-panel">
+            <div class="chart-header">
+                <h2>Gráfico de probabilidade por estado — Fila 1</h2>
+                <button id="download-chart-f1">Baixar PNG</button>
+            </div>
+            <canvas id="stateChartF1"></canvas>
+        </section>
+
+        <section class="panel">
+            <h2>Tabela de probabilidade por estado — Fila 2</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Estado (i)</th>
+                        <th>Tempo acumulado</th>
+                        <th>Probabilidade</th>
+                    </tr>
+                </thead>
+                <tbody id="state-probability-table-f2"></tbody>
+            </table>
+        </section>
+
+        <section class="panel chart-panel">
+            <div class="chart-header">
+                <h2>Gráfico de probabilidade por estado — Fila 2</h2>
+                <button id="download-chart-f2">Baixar PNG</button>
+            </div>
+            <canvas id="stateChartF2"></canvas>
+        </section>
+
+        <section class="panel method-panel">
+            <h2>Explicação do simulador de filas em tandem</h2>
+
+            <p>
+                Este simulador implementa uma simulação de eventos discretos para duas filas em tandem.
+                A Fila 1 recebe chegadas externas. Ao finalizar o atendimento na Fila 1, o cliente tenta
+                entrar na Fila 2. Ao finalizar o atendimento na Fila 2, o cliente sai do sistema.
+            </p>
+
+            <p>
+                São utilizados três tipos de evento:
+                <strong>CHEGADA_F1</strong>,
+                <strong>PASSAGEM_F1_F2</strong>
+                e
+                <strong>SAIDA_F2</strong>.
+                O escalonador mantém os eventos ordenados pelo tempo de ocorrência.
+            </p>
+
+            <div class="formula">
+                X(n+1) = (a * X(n) + c) mod M, com U = X / M
+            </div>
+
+            <p>
+                Antes de processar cada evento, o simulador acumula o tempo decorrido nos estados
+                atuais das duas filas. Dessa forma, ao final da simulação, é possível calcular os
+                tempos acumulados e as probabilidades de cada estado de ambas as filas.
+            </p>
+
+            <p>
+                A perda da Fila 1 ocorre quando um cliente externo chega e encontra a Fila 1 cheia.
+                A perda da Fila 2 ocorre quando um cliente sai da Fila 1 e tenta entrar na Fila 2 cheia.
+            </p>
+        </section>
+    </main>
+
+    <script src="script.js"></script>
+</body>
+</html>

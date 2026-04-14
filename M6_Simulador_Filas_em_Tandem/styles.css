@@ -1,0 +1,230 @@
+:root {
+    --bg-main: #071A4A;
+    --bg-secondary: #0C2C6B;
+    --bg-dark: #051238;
+
+    --blue-electric: #1A5BFF;
+    --blue-neon: #2F7BFF;
+
+    --accent-magenta: #FF4FD8;
+
+    --text-main: #FFFFFF;
+    --text-secondary: #F2F6FF;
+}
+
+body {
+    font-family: "Segoe UI", Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: var(--bg-main);
+    color: var(--text-main);
+}
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+header {
+    background-color: var(--bg-dark);
+    padding: 1rem;
+    text-align: center;
+    border-bottom: 1px solid var(--blue-neon);
+}
+
+main {
+    padding: 1rem;
+}
+
+h2 {
+    margin-top: 0;
+    color: var(--text-secondary);
+}
+
+.panel {
+    max-width: 1100px;
+    margin: 0 auto 1rem auto;
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--blue-neon);
+    border-radius: 8px;
+    padding: 1rem;
+}
+
+.link-panel {
+    text-align: center;
+}
+
+.params-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+}
+
+.params-grid-4 {
+    grid-template-columns: repeat(1, 1fr);
+}
+
+.params-grid-5 {
+    grid-template-columns: repeat(1, 1fr);
+}
+
+.params-grid label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+}
+
+input[type="number"] {
+    padding: 0.55rem;
+    border-radius: 6px;
+    border: 1px solid var(--blue-neon);
+    background-color: var(--bg-dark);
+    color: var(--text-main);
+}
+
+.actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+
+button {
+    background-color: var(--blue-electric);
+    color: var(--text-main);
+    border: none;
+    border-radius: 6px;
+    padding: 0.55rem 1rem;
+    cursor: pointer;
+}
+
+button:hover {
+    background-color: var(--blue-neon);
+}
+
+.error {
+    margin-top: 0.8rem;
+    color: #ffb0b0;
+    font-weight: bold;
+    min-height: 1.2rem;
+}
+
+.metrics {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.8rem;
+}
+
+.metric-card {
+    background-color: var(--bg-dark);
+    border: 1px solid var(--blue-neon);
+    border-radius: 8px;
+    padding: 0.7rem;
+}
+
+.metric-card h3 {
+    margin: 0;
+    font-size: 0.95rem;
+    color: var(--text-secondary);
+}
+
+.metric-card p {
+    margin: 0.3rem 0 0;
+    font-weight: bold;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--blue-neon);
+}
+
+th,
+td {
+    border: 1px solid var(--blue-neon);
+    padding: 0.5rem;
+    text-align: center;
+}
+
+th {
+    background-color: var(--bg-dark);
+    color: var(--text-secondary);
+}
+
+.table-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.table-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.table-hint {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin-top: 0.5rem;
+}
+
+.chart-panel canvas {
+    width: 100% !important;
+    height: 320px !important;
+    margin-top: 1rem;
+    background-color: var(--bg-main);
+    border: 1px solid var(--blue-neon);
+    border-radius: 8px;
+    padding: 0.5rem;
+}
+
+.chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.accordion-toggle {
+    width: 100%;
+    text-align: left;
+    background-color: var(--blue-electric);
+    padding: 0.6rem;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+}
+
+.accordion-toggle:hover {
+    background-color: var(--blue-neon);
+}
+
+.accordion-content {
+    margin-top: 1rem;
+}
+
+.formula {
+    text-align: center;
+    margin: 0.8rem 0;
+    padding: 0.6rem;
+    background-color: var(--bg-dark);
+    border: 1px solid var(--blue-neon);
+    border-radius: 8px;
+    font-weight: bold;
+}
+
+@media (min-width: 720px) {
+    .params-grid-4 {
+        grid-template-columns: repeat(4, 1fr);
+    }
+
+    .params-grid-5 {
+        grid-template-columns: repeat(5, 1fr);
+    }
+
+    .metrics {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}

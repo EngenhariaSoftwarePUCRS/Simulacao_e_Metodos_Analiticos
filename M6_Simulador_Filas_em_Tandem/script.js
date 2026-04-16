@@ -303,7 +303,7 @@ function processArrival(sim, qIdx) {
 // Processa evento de saída de atendimento da fila qIdx
 function processDeparture(sim, qIdx) {
     const q = sim.queues[qIdx];
-    if (q.inService <= 0 || q.customers <= 0) return;
+    if (q.inService <= 0 || q.customers <= 0) return 'SAIDA';
 
     q.inService -= 1;
     q.customers -= 1;
@@ -313,7 +313,7 @@ function processDeparture(sim, qIdx) {
         q.inService += 1;
         if (!scheduleDepartureEvent(sim, qIdx)) {
             sim.shouldStop = true;
-            return;
+            return 'SAIDA';
         }
     }
 
@@ -321,13 +321,15 @@ function processDeparture(sim, qIdx) {
     const dest = selectDestination(sim.routing[qIdx], sim.queues.length, sim.rng);
     if (dest === null) {
         sim.shouldStop = true;
-        return;
+        return 'SAIDA';
     }
 
     if (dest.dest !== 'exit') {
         if (!tryEnterQueue(sim, dest.dest)) sim.shouldStop = true;
+        return 'PASSAGEM';
     }
     // dest === 'exit': cliente deixa o sistema
+    return 'SAIDA';
 }
 
 // Acumula o tempo decorrido nos vetores de estado de cada fila
@@ -379,14 +381,19 @@ function runSimulation(params) {
         const evt = sim.events.shift();
         accumulateTimes(sim, evt.tempo);
         sim.currentTime = evt.tempo;
+        let loggedType = 'SAIDA';
 
-        if (evt.tipo === 'ARRIVAL')    processArrival(sim, evt.queueIdx);
-        else                           processDeparture(sim, evt.queueIdx);
+        if (evt.tipo === 'ARRIVAL') {
+            processArrival(sim, evt.queueIdx);
+            loggedType = 'CHEGADA';
+        } else {
+            loggedType = processDeparture(sim, evt.queueIdx) || 'SAIDA';
+        }
 
         // Registra o estado atual de todas as filas
         sim.processedCounter += 1;
         sim.processedRows.push({
-            event:       `${sim.processedCounter} - ${evt.tipo === 'ARRIVAL' ? 'Chegada' : 'Saida'} F${evt.queueIdx + 1}`,
+            event:       `${sim.processedCounter} - ${loggedType} F${evt.queueIdx + 1}`,
             tempoGlobal: sim.currentTime,
             states:      sim.queues.map(q => ({ customers: q.customers, waiting: waitingCount(q) })),
             times:       sim.queues.map(q => [...q.times]),

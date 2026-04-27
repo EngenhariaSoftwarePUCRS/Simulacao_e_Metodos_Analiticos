@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SiMA - Simulador Generico de Redes de Filas</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
+    <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+    <header>
+        <h1>SiMA - Simulador Generico de Redes de Filas</h1>
+    </header>
+
+    <main>
+        <section class="panel link-panel">
+            <h2>T1 M8 - Rede generica orientada a YAML</h2>
+            <p>
+                Este simulador suporta rede de filas com topologia arbitraria via arquivo YAML.
+                O modo legado tandem permanece disponivel para manter compatibilidade.
+            </p>
+        </section>
+
+        <section class="panel">
+            <h2>Configuracao YAML (M8)</h2>
+
+            <label class="inline-checkbox">
+                <input type="checkbox" id="use-yaml" />
+                Usar configuracao YAML para executar a simulacao
+            </label>
+
+            <div class="actions">
+                <button id="load-model-yaml" type="button">Carregar model.yml do repositorio</button>
+                <button id="clear-yaml" type="button">Limpar YAML</button>
+            </div>
+
+            <label>
+                Conteudo YAML
+                <textarea id="yaml-config" rows="16" placeholder="Cole aqui o conteudo do model.yml"></textarea>
+            </label>
+
+            <p class="table-hint">
+                Em modo YAML, a simulacao para apos o consumo de 100000 numeros aleatorios.
+            </p>
+        </section>
+
+        <section class="panel">
+            <button
+                id="lcg-accordion-toggle"
+                class="accordion-toggle"
+                aria-expanded="false"
+                aria-controls="lcg-distribution-content"
+            >
+                Mostrar gráfico de distribuição do LCG
+            </button>
+
+            <div id="lcg-distribution-content" class="accordion-content" hidden>
+                <h2>Distribuição LCG (Uᵢ x Uᵢ₊₁)</h2>
+                <canvas id="lcgScatterPlot"></canvas>
+            </div>
+        </section>
+
+        <section class="panel">
+            <h2>Gerador pseudoaleatório (LCG)</h2>
+            <div class="params-grid params-grid-5">
+                <label>
+                    Semente (X0)
+                    <input type="number" id="seed" min="0" step="1" value="42" />
+                </label>
+
+                <label>
+                    Multiplicador (a)
+                    <input type="number" id="multiplier" min="1" step="1" value="39758" />
+                </label>
+
+                <label>
+                    Incremento (c)
+                    <input type="number" id="increment" min="0" step="1" value="58739" />
+                </label>
+
+                <label>
+                    Módulo (M)
+                    <input type="number" id="modulus" min="2" step="1" value="987654321" />
+                </label>
+
+                <label>
+                    Quantidade de valores
+                    <input type="number" id="count" min="1" step="1" value="100000" />
+                </label>
+            </div>
+        </section>
+
+        <section class="panel">
+            <h2>Parametros da Fila 1 (modo legado)</h2>
+            <div class="params-grid params-grid-4">
+                <label>
+                    Primeira chegada externa (t0)
+                    <input type="number" id="first-arrival" min="0" step="0.1" value="1.5" />
+                </label>
+
+                <label>
+                    minArrival
+                    <input type="number" id="f1-min-arrival" min="0" step="0.1" value="1.0" />
+                </label>
+
+                <label>
+                    maxArrival
+                    <input type="number" id="f1-max-arrival" min="0" step="0.1" value="4.0" />
+                </label>
+
+                <label>
+                    minService
+                    <input type="number" id="f1-min-service" min="0" step="0.1" value="3.0" />
+                </label>
+
+                <label>
+                    maxService
+                    <input type="number" id="f1-max-service" min="0" step="0.1" value="4.0" />
+                </label>
+
+                <label>
+                    Servidores (c)
+                    <input type="number" id="f1-servers" min="1" step="1" value="2" />
+                </label>
+
+                <label>
+                    Capacidade total (K)
+                    <input type="number" id="f1-capacity" min="1" step="1" value="3" />
+                </label>
+            </div>
+        </section>
+
+        <section class="panel">
+            <h2>Parametros da Fila 2 (modo legado)</h2>
+            <p class="table-hint">
+                A Fila 2 nao recebe chegadas externas no modo legado.
+            </p>
+
+            <div class="params-grid params-grid-4">
+                <label>
+                    minService
+                    <input type="number" id="f2-min-service" min="0" step="0.1" value="2.0" />
+                </label>
+
+                <label>
+                    maxService
+                    <input type="number" id="f2-max-service" min="0" step="0.1" value="3.0" />
+                </label>
+
+                <label>
+                    Servidores (c)
+                    <input type="number" id="f2-servers" min="1" step="1" value="1" />
+                </label>
+
+                <label>
+                    Capacidade total (K)
+                    <input type="number" id="f2-capacity" min="1" step="1" value="5" />
+                </label>
+            </div>
+
+            <div class="actions">
+                <button id="run">Executar simulação</button>
+                <button id="scenario-minimum">Cenário mínimo do enunciado</button>
+                <button id="download-csv">Baixar CSV</button>
+            </div>
+
+            <p id="error" class="error"></p>
+        </section>
+
+        <section class="panel">
+            <h2>Resumo de métricas gerais</h2>
+            <div id="global-metrics" class="metrics"></div>
+        </section>
+
+        <section class="panel">
+            <h2>Metricas por fila</h2>
+            <div id="queues-metrics" class="queues-metrics"></div>
+        </section>
+
+        <section class="panel">
+            <div class="table-header">
+                <h2>Tabela de estados processados</h2>
+                <div class="table-actions">
+                    <button id="toggle-states-limit">Mostrar 1000 primeiros</button>
+                </div>
+            </div>
+
+            <p class="table-hint">
+                Exibindo os 50 primeiros eventos processados por padrão.
+            </p>
+
+            <table>
+                <thead id="states-head"></thead>
+                <tbody id="states-table"></tbody>
+            </table>
+        </section>
+
+        <section class="panel">
+            <div class="table-header">
+                <h2>Tabela de escalonamento</h2>
+                <div class="table-actions">
+                    <button id="toggle-schedule-limit">Mostrar 1000 primeiros</button>
+                </div>
+            </div>
+
+            <p class="table-hint">
+                Exibindo os 50 primeiros escalonamentos por padrão.
+            </p>
+
+            <table>
+                <thead id="schedule-head">
+                    <tr>
+                        <th>Evento</th>
+                        <th>Tempo</th>
+                        <th>Sorteio</th>
+                    </tr>
+                </thead>
+                <tbody id="schedule-table"></tbody>
+            </table>
+        </section>
+
+        <div id="queue-state-sections"></div>
+
+        <section class="panel method-panel">
+            <h2>Explicacao do simulador generico</h2>
+
+            <p>
+                Este simulador executa uma simulacao de eventos discretos com eventos genericos de
+                <strong>Chegada</strong> e <strong>Saida</strong>.
+                A topologia e os roteamentos sao definidos por YAML, sem logica fixa por fila.
+            </p>
+
+            <p>
+                O escalonador mantem eventos ordenados por tempo. As regras de roteamento utilizam
+                as probabilidades declaradas em <strong>network</strong>, incluindo auto-loop e saida externa.
+            </p>
+
+            <div class="formula">
+                X(n+1) = (a * X(n) + c) mod M, com U = X / M
+            </div>
+
+            <p>
+                Antes de cada evento, o simulador acumula o tempo decorrido nos estados atuais de
+                todas as filas. Com isso, calcula tempos e probabilidades por estado para cada fila.
+            </p>
+
+            <p>
+                Perdas sao registradas na fila de destino quando uma chegada encontra capacidade cheia.
+                Capacidade -1 representa fila com capacidade infinita.
+            </p>
+        </section>
+    </main>
+
+    <script src="script.js"></script>
+</body>
+</html>

@@ -1375,25 +1375,14 @@ function loadMinimumScenario() {
     document.getElementById("increment").value = "58739";
     document.getElementById("modulus").value = "987654321";
     document.getElementById("count").value = "100000";
-
-    document.getElementById("first-arrival").value = "1.5";
-
-    document.getElementById("f1-min-arrival").value = "1.0";
-    document.getElementById("f1-max-arrival").value = "4.0";
-    document.getElementById("f1-min-service").value = "3.0";
-    document.getElementById("f1-max-service").value = "4.0";
-    document.getElementById("f1-servers").value = "2";
-    document.getElementById("f1-capacity").value = "3";
-
-    document.getElementById("f2-min-service").value = "2.0";
-    document.getElementById("f2-max-service").value = "3.0";
-    document.getElementById("f2-servers").value = "1";
-    document.getElementById("f2-capacity").value = "5";
-
+    // Load the repository YAML model (updated to the exercise defaults)
     const useYamlNode = document.getElementById("use-yaml");
     if (useYamlNode) {
-        useYamlNode.checked = false;
+        useYamlNode.checked = true;
     }
+
+    // Attempt to load ../model.yml into the YAML textarea and run the simulation
+    loadRepositoryModelYaml();
 }
 
 function scheduleExecuteSimulation() {

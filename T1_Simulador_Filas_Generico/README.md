@@ -83,16 +83,6 @@ seeds:
 #     com os parametros do formulario (semente, multiplicador, incremento, modulo).
 ```
 
-### Observações sobre roteamento
-
-- Probabilidades de roteamento de cada fila podem somar **menos do que 1**: o
-  restante representa saída implícita do sistema (igual ao M3/M8). O simulador
-  acrescenta automaticamente uma rota implícita para `-1` com a probabilidade
-  faltante.
-- Caso a soma exceda 1, o simulador rejeita o YAML.
-- Quando uma fila tem somente uma rota (probabilidade 1 ou determinística), o
-  simulador **não consome aleatório** para a decisão de roteamento.
-
 ### Parâmetros do LCG
 
 Mesmo no modo YAML, os campos do gerador pseudoaleatório

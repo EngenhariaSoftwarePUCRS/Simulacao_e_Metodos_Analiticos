@@ -49,8 +49,8 @@ queues:
    Q1:
       servers: 1
       # capacity opcional: omitido = capacidade infinita (-1)
-      minArrival: 2.0
-      maxArrival: 4.0
+      minArrival: 2.0         # requerido se fila estiver em arrivals
+      maxArrival: 4.0         # requerido se fila estiver em arrivals
       minService: 1.0
       maxService: 2.0
    Q2:
@@ -64,8 +64,8 @@ network:
    target: Q2
    probability: 0.8
 -  source: Q1
-   target: -1        # -1 representa saida do sistema (exterior)
-   probability: 0.2
+   target: -1                 # -1 representa saida do sistema (exterior)
+   probability: 0.2           # soma DEVE ser 1.0 para cada fila
 
 # Para os aleatorios, escolher UM dos tres modos:
 
@@ -95,6 +95,44 @@ A simulação encerra **assim que o 100.000º aleatório é consumido**
 (`MAX_RANDOM_NUMBERS = 100000`). É o valor pedido pelo enunciado e não pode ser
 alterado pela interface no modo YAML.
 
+## Dinâmica da simulação
+
+### Chegadas externas
+
+- Apenas filas **declaradas em `arrivals`** geram chegadas externas periódicas.
+- O tempo da primeira chegada é definido em `arrivals` (ex: `Q1: 2.0`).
+- Depois, a cada chegada processada, uma nova chegada é agendada:
+  - Tempo = tempo_atual + sorteio de U(minArrival, maxArrival)
+  - Consome um aleatório para o sorteio.
+- Se uma fila **não estiver em `arrivals`**, ela só recebe clientes por roteamento 
+  de outras filas (não há chegadas do exterior).
+
+### Processamento de clientes
+
+1. **Na chegada:**
+   - Se fila está CHEIA (currentSize = capacity): cliente é rejeitado 
+     (incrementa lossCount), **não entra na fila**, nenhum novo serviço é iniciado.
+   - Se fila tem espaço:
+     - Cliente entra (currentSize += 1).
+     - Se há servidores livres: sorteia tempo de serviço e agenda partida.
+     - Se não há servidores livres: cliente entra em fila de espera.
+   - **Depois (independente de rejeição):** Se era chegada externa de fila em 
+     `arrivals`, agenda próxima chegada (consome um aleatório).
+
+2. **Na partida:**
+   - Cliente sai da fila (currentSize -= 1).
+   - Se há clientes esperando: sorteia tempo de serviço para próximo cliente.
+   - Depois, sorteia rota de destino (roteamento com U [0,1)).
+   - Se destino ≠ exterior: agenda chegada no destino (instantaneamente).
+
+### Consumo de aleatórios
+
+- Cada sorteio de tempo (chegadas, serviço, roteamento) consome um aleatório.
+- **NÃO consomem aleatório:**
+  - Serviço para clientes rejeitados (rejeitados não entram na fila).
+  - Roteamento determinístico (probabilidade 1.0 com única rota).
+  - Agendamentos de saída para o exterior (destino = -1, sem sorteio de rota).
+
 ## Saídas reportadas
 
 - **Métricas gerais**: tempo total simulado, aleatórios usados/restantes,
@@ -102,13 +140,15 @@ alterado pela interface no modo YAML.
 - **Por fila**:
   - Tabela de **estados (i, tempo acumulado, probabilidade)**.
   - Gráfico de barras com a distribuição de probabilidades por estado.
-  - Quantidade de **clientes perdidos** por capacidade cheia.
-  - Tamanho médio da fila (Nmédio) e probabilidade da fila estar vazia.
-- **Tabela de eventos processados** (com snapshot do tamanho de cada fila e
-  quantos clientes esperando).
-- **Tabela de escalonamento** (cada agendamento, com o aleatório consumido e a
-  expressão `t_atual + sorteio = t_evento`).
-- Botão **"Baixar CSV"** exporta a distribuição de estados de todas as filas.
+  - Quantidade de **clientes perdidos** por capacidade cheia (rejeitados ao
+    chegar em fila cheia).
+  - Tamanho médio da fila (Nmédio) e probabilidade da fila estar vazia (P₀).
+- **Tabela de eventos processados**: lista de eventos (chegadas/partidas) com
+  instante global, snapshot do tamanho de cada fila e clientes em espera.
+- **Tabela de escalonamento**: cada evento agendado, com tempo, aleatório 
+  consumido, operação e expressão (t_anterior + sorteio = t_agendado).
+- Botão **"Baixar CSV"** exporta a distribuição de estados (probabilidades e
+  tempos) de todas as filas.
 
 ## Executando uma simulação com o YAML do repositório
 

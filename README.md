@@ -13,8 +13,3 @@ Disciplina online
 - [M4__Simulador_de_Fila](https://engenhariasoftwarepucrs.github.io/Simulacao_e_Metodos_Analiticos/M4__Simulador_de_Fila/)
 - [M6_Simulador_Filas_em_Tandem](https://engenhariasoftwarepucrs.github.io/Simulacao_e_Metodos_Analiticos/M6_Simulador_Filas_em_Tandem/)
 - [T1_Simulador_Filas_Generico](https://engenhariasoftwarepucrs.github.io/Simulacao_e_Metodos_Analiticos/T1_Simulador_Filas_Generico/)
-
-## Terminology / Tradução
-
-- Portuguese: "entrega de trabalho"
-- English: commonly translated as "assignment" or "deliverable" (can also be "project submission" depending on context).

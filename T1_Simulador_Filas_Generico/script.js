@@ -20,6 +20,61 @@ let scheduleTableLimit = DEFAULT_TABLE_LIMIT;
 let queueStateCharts = new Map();
 let queueStateTableLimits = new Map();
 
+// Fallback YAML to use when ../model.yml cannot be fetched (e.g., GitHub Pages)
+const DEFAULT_MODEL_YAML = `!PARAMETERS
+arrivals:
+  Q1: 2.0
+
+queues:
+  Q1:
+    servers: 1
+    capacity: -1
+    minArrival: 2.0
+    maxArrival: 4.0
+    minService: 1.0
+    maxService: 2.0
+  Q2:
+    servers: 2
+    capacity: 5
+    minService: 4.0
+    maxService: 6.0
+  Q3:
+    servers: 2
+    capacity: 10
+    minService: 5.0
+    maxService: 15.0
+
+network:
+- source: Q1
+    target: Q2
+    probability: 0.8
+- source: Q1
+    target: Q3
+    probability: 0.2
+
+- source: Q2
+    target: Q3
+    probability: 0.5
+- source: Q2
+    target: Q1
+    probability: 0.3
+- source: Q2
+    target: -1
+    probability: 0.2
+
+- source: Q3
+    target: Q2
+    probability: 0.7
+- source: Q3
+    target: -1
+    probability: 0.3
+
+# Optional: use LCG seeds to generate pseudo-random numbers for reproducible runs
+rndnumbersPerSeed: 100000
+seeds:
+     - 42
+`;
+
 function formatNumber(value) {
     return Number(value).toFixed(4);
 }
@@ -1380,7 +1435,16 @@ async function loadRepositoryModelYaml() {
         errorNode.textContent = "model.yml carregado com sucesso.";
         executeSimulation();
     } catch (error) {
-        errorNode.textContent = `Nao foi possivel carregar ../model.yml automaticamente: ${error.message}`;
+        // Fallback: populate YAML textarea with embedded default model so GH-Pages
+        // deployments that cannot serve ../model.yml still work.
+        const yamlNode = document.getElementById("yaml-config");
+        if (yamlNode) {
+            yamlNode.value = DEFAULT_MODEL_YAML;
+            errorNode.textContent = `Nao foi possivel carregar ../model.yml automaticamente: ${error.message}. Conteudo padrao carregado.`;
+            executeSimulation();
+        } else {
+            errorNode.textContent = `Nao foi possivel carregar ../model.yml automaticamente: ${error.message}`;
+        }
     }
 }
 

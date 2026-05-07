@@ -18,6 +18,7 @@ let regenerateTimeoutId = null;
 let statesTableLimit = DEFAULT_TABLE_LIMIT;
 let scheduleTableLimit = DEFAULT_TABLE_LIMIT;
 let queueStateCharts = new Map();
+let queueStateTableLimits = new Map();
 
 function formatNumber(value) {
     return Number(value).toFixed(4);
@@ -63,6 +64,15 @@ function setLimitToggleLabel(buttonId, currentLimit) {
     if (!button) {
         return;
     }
+
+    button.textContent = currentLimit === DEFAULT_TABLE_LIMIT
+        ? "Mostrar 1000 primeiros"
+        : "Mostrar 50 primeiros";
+}
+
+function setQueueLimitToggleLabel(buttonId, currentLimit) {
+    const button = document.getElementById(buttonId);
+    if (!button) return;
 
     button.textContent = currentLimit === DEFAULT_TABLE_LIMIT
         ? "Mostrar 1000 primeiros"
@@ -165,6 +175,7 @@ function pushProcessedRow(sim, event) {
         globalTime: sim.currentTime,
         queueSnapshots,
     });
+    // no debug capture in production mode
 }
 
 function createListRandomSource(values, maxUsage) {
@@ -209,6 +220,7 @@ function nextRandom(rng) {
     }
 
     rng.used += 1;
+
     return value;
 }
 
@@ -343,7 +355,7 @@ function scheduleRoutedArrival(sim, sourceQueue, destinationQueue, routeChoice) 
 
     scheduleEvent(sim, event, {
         event: formatEventLabel(event),
-        tempo: `${formatNumber(sim.currentTime)} + 0.0000 = ${formatNumber(sim.currentTime)}`,
+        tempo: `${formatNumber(sim.currentTime)} + 0.0000 = ${formatNumber(event.time)}`,
         sorteio: routingInfo,
     });
 }
@@ -740,6 +752,11 @@ function normalizeModel(rawModel) {
         initialArrivals.set(queueId, time);
     });
 
+    // If no arrivals were declared, default the first queue to initial arrival time 2.0
+    if (initialArrivals.size === 0 && queueOrder.length > 0) {
+        initialArrivals.set(queueOrder[0], 2.0);
+    }
+
     queueOrder.forEach((queueId) => {
         if (initialArrivals.has(queueId)) {
             const queueConfig = queueBlueprints.get(queueId);
@@ -1076,16 +1093,26 @@ function renderQueueStateSections(result) {
     clearQueueCharts();
     container.innerHTML = "";
 
+    // Note: overall CSV download is available via the 'Baixar CSV' button in the
+    // execution controls; per-queue CSV/PNG controls remain in each panel.
+
     result.queueOrder.forEach((queueId, index) => {
         const queueResult = result.queues[queueId];
         const tableBodyId = `state-probability-table-${index}`;
         const chartId = `state-chart-${index}`;
         const downloadButtonId = `download-chart-${index}`;
+        const toggleLimitButtonId = `toggle-queue-limit-${index}`;
+        const downloadQueueCsvId = `download-queue-csv-${index}`;
 
         const panel = document.createElement("section");
         panel.className = "panel";
         panel.innerHTML = `
             <h2>Tabela de probabilidade por estado - Fila ${escapeHtml(queueId)}</h2>
+            <div class="metrics" style="margin-bottom:0.6rem;">
+                <article class="metric-card"><h3>Perdas</h3><p>${queueResult.loss} clientes</p></article>
+                <article class="metric-card"><h3>População média (Nmedio)</h3><p>${formatNumber(queueResult.nMedio)} clientes</p></article>
+                <article class="metric-card"><h3>Prob. fila vazia</h3><p>${formatNumber(queueResult.pVazia * 100)}%</p></article>
+            </div>
             <table>
                 <thead>
                     <tr>
@@ -1096,11 +1123,14 @@ function renderQueueStateSections(result) {
                 </thead>
                 <tbody id="${tableBodyId}"></tbody>
             </table>
-
             <div class="chart-panel">
                 <div class="chart-header">
                     <h2>Grafico de probabilidade por estado - Fila ${escapeHtml(queueId)}</h2>
-                    <button id="${downloadButtonId}" type="button">Baixar PNG</button>
+                    <div>
+                        <button id="${toggleLimitButtonId}" type="button">Mostrar 1000 primeiros</button>
+                        <button id="${downloadQueueCsvId}" type="button">Baixar CSV</button>
+                        <button id="${downloadButtonId}" type="button">Baixar PNG</button>
+                    </div>
                 </div>
                 <canvas id="${chartId}"></canvas>
             </div>
@@ -1110,9 +1140,16 @@ function renderQueueStateSections(result) {
 
         const tbody = document.getElementById(tableBodyId);
         if (tbody) {
-            tbody.innerHTML = queueResult.states.map((state, stateIndex) => {
+            const currentLimit = queueStateTableLimits.get(queueId) ?? DEFAULT_TABLE_LIMIT;
+            const visibleStates = queueResult.states.slice(0, currentLimit);
+            tbody.innerHTML = visibleStates.map((state, stateIndex) => {
                 return `<tr><td>${state}</td><td>${formatNumber(queueResult.times[stateIndex])}</td><td>${formatNumber(queueResult.prob[stateIndex])}</td></tr>`;
             }).join("");
+
+            const hidden = Math.max(0, queueResult.states.length - visibleStates.length);
+            if (hidden > 0) {
+                tbody.insertAdjacentHTML("beforeend", `<tr><td colspan="3">+ ${hidden} estados ocultos (use o botao para expandir)</td></tr>`);
+            }
         }
 
         const chart = createStateChart(chartId, queueResult, `P(i) ${queueId}`);
@@ -1126,7 +1163,79 @@ function renderQueueStateSections(result) {
                 exportChartPng(queueStateCharts.get(queueId), `probabilidade_estados_${queueId}.png`);
             });
         }
+
+        const toggleLimitButton = document.getElementById(toggleLimitButtonId);
+        if (toggleLimitButton) {
+            // initialize label
+            const initialLimit = queueStateTableLimits.get(queueId) ?? DEFAULT_TABLE_LIMIT;
+            setQueueLimitToggleLabel(toggleLimitButtonId, initialLimit);
+            toggleLimitButton.addEventListener("click", () => {
+                const current = queueStateTableLimits.get(queueId) ?? DEFAULT_TABLE_LIMIT;
+                const next = current === DEFAULT_TABLE_LIMIT ? EXPANDED_TABLE_LIMIT : DEFAULT_TABLE_LIMIT;
+                queueStateTableLimits.set(queueId, next);
+                setQueueLimitToggleLabel(toggleLimitButtonId, next);
+                renderQueueStateSections(result);
+            });
+        }
+
+        const downloadQueueCsvButton = document.getElementById(downloadQueueCsvId);
+        if (downloadQueueCsvButton) {
+            downloadQueueCsvButton.addEventListener("click", () => {
+                const rows = ["fila,estado,tempo,probabilidade"];
+                queueResult.states.forEach((state, index) => {
+                    rows.push(`${queueId},${state},${formatNumber(queueResult.times[index])},${formatNumber(queueResult.prob[index])}`);
+                });
+                const blob = new Blob([rows.join("\n")], { type: "text/csv;charset=utf-8;" });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement("a");
+                link.href = url;
+                link.download = `probabilidade_estados_${queueId}.csv`;
+                link.click();
+                URL.revokeObjectURL(url);
+            });
+        }
     });
+}
+
+function generateYamlFromBuilder() {
+    const model = {
+        queues: {
+            Q1: {
+                servers: Number(document.getElementById("f1-servers")?.value ?? 1),
+                capacity: Number(document.getElementById("f1-capacity")?.value ?? -1),
+                minArrival: Number(document.getElementById("f1-min-arrival")?.value ?? 0),
+                maxArrival: Number(document.getElementById("f1-max-arrival")?.value ?? 0),
+                minService: Number(document.getElementById("f1-min-service")?.value ?? 0),
+                maxService: Number(document.getElementById("f1-max-service")?.value ?? 0),
+            },
+            Q2: {
+                servers: Number(document.getElementById("f2-servers")?.value ?? 1),
+                capacity: Number(document.getElementById("f2-capacity")?.value ?? -1),
+                minService: Number(document.getElementById("f2-min-service")?.value ?? 0),
+                maxService: Number(document.getElementById("f2-max-service")?.value ?? 0),
+            },
+        },
+        arrivals: {
+            Q1: Number(document.getElementById("first-arrival")?.value ?? 0),
+        },
+        network: [
+            { source: "Q1", target: "Q2", probability: 1.0 },
+            { source: "Q2", target: EXTERNAL_QUEUE_ID, probability: 1.0 },
+        ],
+    };
+
+    let yamlText = "";
+    if (window.jsyaml && window.jsyaml.dump) {
+        yamlText = window.jsyaml.dump(model, { noRefs: true });
+    } else {
+        // fallback simple string
+        yamlText = `queues:\n  Q1:\n    servers: ${model.queues.Q1.servers}\n    capacity: ${model.queues.Q1.capacity}\n    minArrival: ${model.queues.Q1.minArrival}\n    maxArrival: ${model.queues.Q1.maxArrival}\n    minService: ${model.queues.Q1.minService}\n    maxService: ${model.queues.Q1.maxService}\n  Q2:\n    servers: ${model.queues.Q2.servers}\n    capacity: ${model.queues.Q2.capacity}\n    minService: ${model.queues.Q2.minService}\n    maxService: ${model.queues.Q2.maxService}\narrivals:\n  Q1: ${model.arrivals.Q1}\nnetwork:\n  - source: Q1\n    target: Q2\n    probability: 1.0\n  - source: Q2\n    target: -1\n    probability: 1.0\n`;
+    }
+
+    const yamlNode = document.getElementById("yaml-config");
+    if (yamlNode) {
+        yamlNode.value = yamlText;
+    }
 }
 
 function exportCsv(result) {
@@ -1263,9 +1372,9 @@ async function loadRepositoryModelYaml() {
             yamlNode.value = text;
         }
 
-        const useYamlNode = document.getElementById("use-yaml");
-        if (useYamlNode) {
-            useYamlNode.checked = true;
+        if (yamlNode) {
+            // simply populate the YAML textarea from repository and run simulation
+            yamlNode.value = text;
         }
 
         errorNode.textContent = "model.yml carregado com sucesso.";
@@ -1338,10 +1447,110 @@ function resolveSimulationSetup(params, useYaml) {
     }
 }
 
+// Compute visit rates and utilizations for the network and detect instability.
+function computeNetworkUtilization(modelBlueprint) {
+    try {
+        const queueOrder = modelBlueprint.queueOrder;
+        const n = queueOrder.length;
+        if (n === 0) return { error: "" };
+
+        // external arrival rates (per time unit) based on mean interarrival
+        const e = new Array(n).fill(0);
+        for (let i = 0; i < n; i += 1) {
+            const q = modelBlueprint.queueBlueprints.get(queueOrder[i]);
+            if (q.minArrival !== null && q.maxArrival !== null) {
+                const meanInter = (q.minArrival + q.maxArrival) / 2;
+                if (meanInter <= 0) return { error: `Fila ${q.id}: mean interarrival deve ser > 0.` };
+                e[i] = 1 / meanInter;
+            }
+        }
+
+        // build routing probability matrix P (source rows -> dest cols)
+        const P = Array.from({ length: n }, () => new Array(n).fill(0));
+        for (let i = 0; i < n; i += 1) {
+            const q = modelBlueprint.queueBlueprints.get(queueOrder[i]);
+            for (const r of q.routes) {
+                if (r.destination === EXTERNAL_QUEUE_ID) continue;
+                const j = queueOrder.indexOf(String(r.destination));
+                if (j >= 0) P[i][j] = P[i][j] + Number(r.probability);
+            }
+        }
+
+        // Solve v = e + v * P  => (I - P^T) * v_col = e_col
+        // Build A = I - P^T
+        const A = Array.from({ length: n }, (_, i) => new Array(n).fill(0));
+        for (let i = 0; i < n; i += 1) {
+            for (let j = 0; j < n; j += 1) {
+                A[i][j] = (i === j ? 1 : 0) - P[j][i];
+            }
+        }
+
+        // clone e into b
+        const b = e.slice();
+
+        // Solve linear system A x = b via Gaussian elimination with partial pivot
+        const M = A.map((row) => row.slice());
+        const rhs = b.slice();
+
+        for (let k = 0; k < n; k += 1) {
+            // partial pivot
+            let maxRow = k;
+            for (let i = k + 1; i < n; i += 1) {
+                if (Math.abs(M[i][k]) > Math.abs(M[maxRow][k])) maxRow = i;
+            }
+            if (Math.abs(M[maxRow][k]) < 1e-12) {
+                return { error: "Rede singular ou instavel (matriz I-P^T singular)." };
+            }
+            // swap
+            [M[k], M[maxRow]] = [M[maxRow], M[k]];
+            [rhs[k], rhs[maxRow]] = [rhs[maxRow], rhs[k]];
+
+            // eliminate
+            for (let i = k + 1; i < n; i += 1) {
+                const factor = M[i][k] / M[k][k];
+                for (let j = k; j < n; j += 1) M[i][j] -= factor * M[k][j];
+                rhs[i] -= factor * rhs[k];
+            }
+        }
+
+        // back substitution
+        const x = new Array(n).fill(0);
+        for (let i = n - 1; i >= 0; i -= 1) {
+            let sum = rhs[i];
+            for (let j = i + 1; j < n; j += 1) sum -= M[i][j] * x[j];
+            x[i] = sum / M[i][i];
+        }
+
+        // compute utilizations
+        const unstable = [];
+        for (let i = 0; i < n; i += 1) {
+            const q = modelBlueprint.queueBlueprints.get(queueOrder[i]);
+            const meanService = (q.minService + q.maxService) / 2;
+            const visitsPerTime = x[i];
+            const rho = (visitsPerTime * meanService) / q.servers;
+            if (!Number.isFinite(rho)) return { error: `Fila ${q.id}: utilizacao invalida.` };
+            if (rho >= 1 - 1e-9) {
+                unstable.push({ id: q.id, rho, visitsPerTime, meanService, servers: q.servers });
+            }
+        }
+
+        if (unstable.length > 0) {
+            const lines = unstable.map((u) => `Fila ${u.id}: utilizacao=${u.rho.toFixed(4)} (visitas=${u.visitsPerTime.toFixed(4)}, tempoMedioServico=${u.meanService})`);
+            const msg = `Rede potencialmente instavel. Ajuste tempos de servico, probabilidades de roteamento ou servidores.\n` + lines.join("\n");
+            return { error: msg };
+        }
+
+        return { error: "" };
+    } catch (err) {
+        return { error: `Erro calculando estabilidade: ${err.message}` };
+    }
+}
+
 function executeSimulation() {
     const errorNode = document.getElementById("error");
     const params = readParams();
-    const useYaml = document.getElementById("use-yaml")?.checked ?? false;
+    // Force YAML-only mode: the newer YAML-driven model is the single supported mode
+    const useYaml = true;
 
     const setup = resolveSimulationSetup(params, useYaml);
     if (setup.error) {
@@ -1350,6 +1559,8 @@ function executeSimulation() {
     }
 
     errorNode.textContent = "";
+    // Production mode: no debug traces
+
     lastResult = runSimulation(setup.modelBlueprint, setup.rngSource);
 
     statesTableLimit = DEFAULT_TABLE_LIMIT;
@@ -1367,6 +1578,8 @@ function executeSimulation() {
     if (isLcgVisible) {
         renderLcgDistributionChart(params);
     }
+
+    // no debug dump generation in production mode
 }
 
 function loadMinimumScenario() {
@@ -1375,12 +1588,6 @@ function loadMinimumScenario() {
     document.getElementById("increment").value = "58739";
     document.getElementById("modulus").value = "987654321";
     document.getElementById("count").value = "100000";
-    // Load the repository YAML model (updated to the exercise defaults)
-    const useYamlNode = document.getElementById("use-yaml");
-    if (useYamlNode) {
-        useYamlNode.checked = true;
-    }
-
     // Attempt to load ../model.yml into the YAML textarea and run the simulation
     loadRepositoryModelYaml();
 }
@@ -1410,7 +1617,6 @@ function setupAutoRegeneration() {
         "f2-max-service",
         "f2-servers",
         "f2-capacity",
-        "use-yaml",
         "yaml-config",
     ];
 
@@ -1425,6 +1631,18 @@ function setupAutoRegeneration() {
         node.addEventListener("input", scheduleExecuteSimulation);
     });
 }
+
+// Visual editor has been removed; configuration is YAML-only.
+
+// Visual editor controls removed from the UI in YAML-only mode.
+
+// YAML mode radios removed; use "Carregar model.yml do repositorio" to reset, edit YAML manually, or edit via visual editor.
+
+// initialize visual editor and sync
+document.addEventListener("DOMContentLoaded", () => {
+    // Start by loading repo defaults into visual editor (if available)
+    loadRepositoryModelYaml();
+});
 
 document.getElementById("run")?.addEventListener("click", executeSimulation);
 
@@ -1446,12 +1664,9 @@ document.getElementById("load-model-yaml")?.addEventListener("click", () => {
     loadRepositoryModelYaml();
 });
 
-document.getElementById("clear-yaml")?.addEventListener("click", () => {
-    const yamlNode = document.getElementById("yaml-config");
-    if (yamlNode) {
-        yamlNode.value = "";
-    }
-});
+// generate-yaml button removed; visual editor auto-sync handles YAML generation
+
+// clear-yaml button removed; users can edit textarea directly
 
 document.getElementById("toggle-states-limit")?.addEventListener("click", () => {
     if (!lastResult) {

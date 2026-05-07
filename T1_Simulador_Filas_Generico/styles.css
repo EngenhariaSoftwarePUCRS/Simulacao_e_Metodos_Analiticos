@@ -219,6 +219,19 @@ th {
     padding: 0.5rem;
 }
 
+/* LCG scatter plot: fixed height and max-height to avoid unbounded growth */
+#lcg-distribution-content canvas,
+#lcgScatterPlot {
+    width: 100% !important;
+    height: 320px !important;
+    max-height: 420px !important;
+    margin-top: 1rem;
+    background-color: var(--bg-main);
+    border: 1px solid var(--blue-neon);
+    border-radius: 8px;
+    padding: 0.5rem;
+}
+
 .chart-header {
     display: flex;
     justify-content: space-between;

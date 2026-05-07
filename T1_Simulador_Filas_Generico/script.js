@@ -46,33 +46,33 @@ queues:
 
 network:
 - source: Q1
-    target: Q2
-    probability: 0.8
+  target: Q2
+  probability: 0.8
 - source: Q1
-    target: Q3
-    probability: 0.2
+  target: Q3
+  probability: 0.2
 
 - source: Q2
-    target: Q3
-    probability: 0.5
+  target: Q3
+  probability: 0.5
 - source: Q2
-    target: Q1
-    probability: 0.3
+  target: Q1
+  probability: 0.3
 - source: Q2
-    target: -1
-    probability: 0.2
+  target: -1
+  probability: 0.2
 
 - source: Q3
-    target: Q2
-    probability: 0.7
+  target: Q2
+  probability: 0.7
 - source: Q3
-    target: -1
-    probability: 0.3
+  target: -1
+  probability: 0.3
 
 # Optional: use LCG seeds to generate pseudo-random numbers for reproducible runs
 rndnumbersPerSeed: 100000
 seeds:
-     - 42
+   - 42
 `;
 
 function formatNumber(value) {

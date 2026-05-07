@@ -102,3 +102,8 @@ T1_Simulador_Filas_Generico/
 
 model.yml (na raiz) ← exemplo de rede de filas
 ```
+
+## Resumo e projeto final
+
+- **Resumo em PDF:** disponível em [T1__Grupo42_FelipeFreitas_MarinaYamaguti_SofiaSartori__SIMULACAO_E_METODOS_ANALITICOS.pdf](T1_Simulador_Filas_Generico/T1__Grupo42_FelipeFreitas_MarinaYamaguti_SofiaSartori__SIMULACAO_E_METODOS_ANALITICOS.pdf)
+- **Projeto final (hospedado):** https://engenhariasoftwarepucrs.github.io/Simulacao_e_Metodos_Analiticos/T1_Simulador_Filas_Generico/

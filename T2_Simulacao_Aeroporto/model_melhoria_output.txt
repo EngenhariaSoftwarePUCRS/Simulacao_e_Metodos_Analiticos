@@ -1,0 +1,83 @@
+RESULTADOS DE SIMULACAO - MODEL_MELHORIA
+Tempo total: 95083.1800 min
+
+--- F1 (2 serv, cap 40) ---
+  Estado 0: 0.00%
+  Estado 1: 0.00%
+  Estado 2: 0.00%
+  Estado 3: 0.00%
+  Estado 4: 0.00%
+  Estado 5: 0.00%
+  Estado 6: 0.00%
+  Estado 7: 0.00%
+  Estado 8: 0.00%
+  Estado 9: 0.00%
+  Estado 10: 0.00%
+  Estado 11: 0.00%
+  Estado 12: 0.00%
+  Estado 13: 0.00%
+  Estado 14: 0.00%
+  Estado 15: 0.00%
+  Estado 16: 0.00%
+  Estado 17: 0.00%
+  Estado 18: 0.00%
+  Estado 19: 0.00%
+  Estado 20: 0.00%
+  Estado 21: 0.00%
+  Estado 22: 0.00%
+  Estado 23: 0.00%
+  Estado 24: 0.00%
+  Estado 25: 0.00%
+  Estado 26: 0.00%
+  Estado 27: 0.00%
+  Estado 28: 0.00%
+  Estado 29: 0.00%
+  Estado 30: 0.00%
+  Estado 31: 0.00%
+  Estado 32: 0.00%
+  Estado 33: 0.00%
+  Estado 34: 0.00%
+  Estado 35: 0.00%
+  Estado 36: 0.00%
+  Estado 37: 0.00%
+  Estado 38: 0.20%
+  Estado 39: 7.98%
+  Estado 40: 91.75%
+  Perdas: 54425
+
+--- F2 (2 serv, cap 35) ---
+  Estado 0: 4.67%
+  Estado 1: 17.90%
+  Estado 2: 27.67%
+  Estado 3: 22.82%
+  Estado 4: 11.76%
+  Estado 5: 6.42%
+  Estado 6: 4.02%
+  Estado 7: 2.23%
+  Estado 8: 1.03%
+  Estado 9: 0.56%
+  Estado 10: 0.36%
+  Estado 11: 0.32%
+  Estado 12: 0.17%
+  Estado 13: 0.07%
+  Estado 14: 0.00%
+  Perdas: 0
+
+--- F3 (2 serv, cap 12) ---
+  Estado 0: 73.47%
+  Estado 1: 23.49%
+  Estado 2: 2.88%
+  Estado 3: 0.16%
+  Estado 4: 0.00%
+  Perdas: 0
+
+--- F4 (1 serv, cap 20) ---
+  Estado 0: 93.60%
+  Estado 1: 6.23%
+  Estado 2: 0.17%
+  Perdas: 0
+
+F1: N=39.9018  D=5.9999  U=100.00%  W=399.03min
+F2: N=2.8389  D=3.7693  U=86.38%  W=45.19min
+F3: N=0.2972  D=1.3646  U=14.78%  W=13.07min
+F4: N=0.0657  D=0.7680  U=6.40%  W=5.14min

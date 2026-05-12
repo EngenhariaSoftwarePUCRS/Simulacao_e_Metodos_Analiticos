@@ -1,0 +1,72 @@
+RESULTADOS DE SIMULACAO - MODEL_ATUAL
+Tempo total: 116386.0678 min
+
+--- F1 (1 serv, cap 40) ---
+  Estado 0: 0.00%
+  Estado 1: 0.00%
+  Estado 2: 0.00%
+  Estado 3: 0.00%
+  Estado 4: 0.00%
+  Estado 5: 0.00%
+  Estado 6: 0.00%
+  Estado 7: 0.00%
+  Estado 8: 0.00%
+  Estado 9: 0.00%
+  Estado 10: 0.00%
+  Estado 11: 0.00%
+  Estado 12: 0.00%
+  Estado 13: 0.00%
+  Estado 14: 0.00%
+  Estado 15: 0.00%
+  Estado 16: 0.00%
+  Estado 17: 0.00%
+  Estado 18: 0.00%
+  Estado 19: 0.00%
+  Estado 20: 0.00%
+  Estado 21: 0.00%
+  Estado 22: 0.00%
+  Estado 23: 0.00%
+  Estado 24: 0.00%
+  Estado 25: 0.00%
+  Estado 26: 0.00%
+  Estado 27: 0.00%
+  Estado 28: 0.00%
+  Estado 29: 0.00%
+  Estado 30: 0.00%
+  Estado 31: 0.00%
+  Estado 32: 0.00%
+  Estado 33: 0.00%
+  Estado 34: 0.00%
+  Estado 35: 0.00%
+  Estado 36: 0.00%
+  Estado 37: 0.00%
+  Estado 38: 0.00%
+  Estado 39: 3.87%
+  Estado 40: 96.08%
+  Perdas: 72527
+
+--- F2 (2 serv, cap 35) ---
+  Estado 0: 31.54%
+  Estado 1: 50.99%
+  Estado 2: 16.32%
+  Estado 3: 1.12%
+  Estado 4: 0.03%
+  Perdas: 0
+
+--- F3 (1 serv, cap 8) ---
+  Estado 0: 84.97%
+  Estado 1: 14.25%
+  Estado 2: 0.78%
+  Estado 3: 0.01%
+  Perdas: 0
+
+--- F4 (1 serv, cap 20) ---
+  Estado 0: 96.81%
+  Estado 1: 3.15%
+  Estado 2: 0.04%
+  Perdas: 0
+
+F1: N=39.9503  D=3.0000  U=100.00%  W=799.01min
+F2: N=0.8710  D=1.8748  U=42.96%  W=27.88min
+F3: N=0.1583  D=0.6938  U=15.03%  W=13.69min
+F4: N=0.0323  D=0.3826  U=3.19%  W=5.06min

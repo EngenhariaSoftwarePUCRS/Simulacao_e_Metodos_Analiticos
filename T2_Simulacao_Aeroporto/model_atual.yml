@@ -1,6 +1,6 @@
 !PARAMETERS
 arrivals:
-  F1: 1.0
+  F1: 0.0
 
 queues:
   F1:
